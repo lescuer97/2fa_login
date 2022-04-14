@@ -1,0 +1,8 @@
+{
+	"devDependencies": {
+		"@testing-library/dom": "^8.13.0",
+		"@testing-library/jest-dom": "^5.16.4",
+		"@testing-library/user-event": "^14.1.0",
+		"jsom": "^1.0.0"
+	}
+}

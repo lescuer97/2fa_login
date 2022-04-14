@@ -1,0 +1,24 @@
+use serde::{Deserialize, Serialize};
+
+const SUCCESS: &str = "Success";
+const FAILURE: &str = "Failure";
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct ResponseBodyMessage<T> {
+    pub status: String,
+    pub data: Box<T>,
+}
+impl<T> ResponseBodyMessage<T> {
+    pub fn success_message(data: T) -> Self {
+        Self {
+            status: SUCCESS.to_string(),
+            data: Box::new(data),
+        }
+    }
+    pub fn fail_message(data: T) -> Self {
+        Self {
+            status: FAILURE.to_string(),
+            data: Box::new(data),
+        }
+    }
+}
