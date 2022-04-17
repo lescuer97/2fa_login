@@ -1,18 +1,19 @@
 use actix_cors::Cors;
 use actix_web::cookie::Cookie;
 use actix_web::{
-    cookie, guard, http, http::header::ContentType, middleware, post, web, App, HttpRequest,
+    get, guard, http, http::header::ContentType, middleware, post, web, App, HttpRequest,
     HttpResponse, HttpServer,
 };
 use rust_server::auth::JWTToken;
 use rust_server::server_messages::ResponseBodyMessage;
 use rust_server::users::{LoginData, RegisterUserData};
+use rust_server::utils::generate_cookie;
+use serde_json::json;
 use sqlx::{PgPool, Pool, Postgres};
 use std::env;
 
 async fn options_call() -> HttpResponse {
     HttpResponse::Ok()
-        // .append_header(("Access-Control-Allow-Origin", "*"))
         .content_type(ContentType::json())
         .finish() // <
 }
@@ -63,6 +64,15 @@ async fn login_function(
         .json(success_registering)
 }
 
+#[get("/api/content")]
+pub async fn content() -> HttpResponse {
+    let values = json!([{"user":"leo", "gender":"male"},{"user":"valeria", "gender":"mujer"}]);
+
+    HttpResponse::Ok()
+        .content_type(ContentType::json())
+        .json(values)
+}
+
 #[get("/auth/checklogin")]
 pub async fn check_login(req: HttpRequest) -> HttpResponse {
     let json_token_valid = match JWTToken::validate_jwt_token_from_cookie(req) {
@@ -81,9 +91,22 @@ pub async fn check_login(req: HttpRequest) -> HttpResponse {
     }
 }
 
+#[post("/auth/logout")]
+pub async fn logout() -> HttpResponse {
+    let jwt: String = match JWTToken::logout_jwt_token() {
+        Ok(token) => token,
+        Err(_) => {
+            return HttpResponse::InternalServerError()
+                .content_type(ContentType::json())
+                .json("There was a problem with your request");
+        }
     };
-
-    HttpResponse::Ok().cookie(jwt_cookie).finish()
+    let mut jwt_cookie = generate_cookie("auth", jwt);
+    jwt_cookie.make_removal();
+    HttpResponse::Ok()
+        .cookie(jwt_cookie)
+        .content_type(ContentType::json())
+        .finish()
 }
 
 #[post("/auth/register")]
@@ -100,8 +123,11 @@ pub async fn register_user(
                 .body("");
         }
     };
+    let success_registering = ResponseBodyMessage::success_message(json!("Registed successfuly"));
 
-    HttpResponse::Ok().finish()
+    HttpResponse::Ok()
+        .content_type(ContentType::json())
+        .json(success_registering)
 }
 
 #[actix_web::main]
@@ -144,6 +170,9 @@ async fn main() -> std::io::Result<()> {
                     .route(web::post().to(login_function)),
             )
             .service(register_user)
+            .service(content)
+            .service(logout)
+            .service(check_login)
     })
     .bind(("localhost", 3010))?
     .run()
@@ -225,7 +254,6 @@ mod tests {
 
         // Execute application
         let res = test::call_service(&app, req).await;
-        println!("res: {:?}", res);
         assert_eq!(res.status(), StatusCode::UNPROCESSABLE_ENTITY);
     }
 
