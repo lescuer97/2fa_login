@@ -120,6 +120,8 @@ async fn main() -> std::io::Result<()> {
         let cors = Cors::default()
             .allowed_origin("http://localhost:3000")
             .allowed_origin("https://leito.dev")
+            .allowed_origin("http://127.0.0.1:3000")
+            .allowed_origin("https://login.localhost")
             .allowed_methods(vec!["GET", "POST"])
             .supports_credentials()
             .allowed_headers(vec![http::header::AUTHORIZATION, http::header::ACCEPT])

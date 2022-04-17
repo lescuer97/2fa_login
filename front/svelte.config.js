@@ -8,7 +8,16 @@ const config = {
 	preprocess: preprocess(),
 
 	kit: {
-		adapter: adapter()
+		adapter: adapter(),
+		vite: {
+			server: {
+				hmr: {
+					host: 'login.localhost',
+					clientPort: 443,
+					protocol: 'wss'
+				}
+			}
+		}
 	}
 };
 

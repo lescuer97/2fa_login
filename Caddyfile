@@ -1,0 +1,11 @@
+login.localhost {
+        handle /api/* {
+                reverse_proxy localhost:3010
+        }
+        handle /auth/* {
+                reverse_proxy localhost:3010
+        }
+        handle {
+                reverse_proxy localhost:3000
+        }
+}
