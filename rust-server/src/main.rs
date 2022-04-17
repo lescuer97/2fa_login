@@ -24,7 +24,7 @@ async fn login_function(
     pool: web::Data<Pool<Postgres>>,
 ) -> HttpResponse {
     // used in case that the client calls when already signed in
-    match JWTToken::validate_jwt_token(req) {
+    match JWTToken::validate_jwt_token_from_cookie(req) {
         Ok(()) => {
             let already_logedin_value = ResponseBodyMessage::success_message("Already Logged in");
 
@@ -39,7 +39,6 @@ async fn login_function(
         Ok(()) => (),
         Err(error) => {
             println!("login Error {:?}", error);
-
             return HttpResponse::NotFound()
                 .content_type(ContentType::json())
                 .body("Incorrect username or password");
@@ -54,29 +53,34 @@ async fn login_function(
                 .body("Incorrect username or password");
         }
     };
+    let jwt_cookie: Cookie = generate_cookie("auth", jwt);
 
-    let env_variable: String = match env::var("ENVIROMENT") {
-        Ok(variable) => variable,
+    let success_registering = ResponseBodyMessage::success_message(json!("Logged in"));
+
+    HttpResponse::Ok()
+        .content_type(ContentType::json())
+        .cookie(jwt_cookie)
+        .json(success_registering)
+}
+
+#[get("/auth/checklogin")]
+pub async fn check_login(req: HttpRequest) -> HttpResponse {
+    let json_token_valid = match JWTToken::validate_jwt_token_from_cookie(req) {
+        Ok(()) => true,
         Err(_) => {
-            println!("there is no ENVIROMENT variable set");
-            String::from("")
+            println!("No jwt token");
+            false
         }
     };
-
-    let jwt_cookie: Cookie = if env_variable == "development" {
-        cookie::Cookie::build("auth", jwt)
-            .secure(false)
-            .http_only(true)
+    if json_token_valid {
+        HttpResponse::Ok()
+            .content_type(ContentType::json())
             .finish()
     } else {
-        cookie::Cookie::build("auth", jwt)
-            .path("/")
-            .domain(".leito.dev")
-            .secure(true)
-            .http_only(true)
-            // .expires(EXPIRATION)
-            .same_site(cookie::SameSite::Strict)
-            .finish()
+        HttpResponse::TemporaryRedirect().finish()
+    }
+}
+
     };
 
     HttpResponse::Ok().cookie(jwt_cookie).finish()

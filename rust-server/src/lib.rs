@@ -13,3 +13,4 @@
 pub mod auth;
 pub mod server_messages;
 pub mod users;
+pub mod utils;
