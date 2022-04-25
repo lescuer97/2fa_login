@@ -32,6 +32,17 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v2
 
+      - name: "Create env file for front"
+        working-directory: ./front
+        env:
+          VITE_AUTH_SERVER: ${{ secrets.VITE_AUTH_SERVER }}
+          VITE_ENVIROMENT: ${{ secrets.VITE_ENVIROMENT }}
+        run: |
+          touch .env
+          echo VITE_AUTH_SERVER=$VITE_AUTH_SERVER >> .env
+          echo VITE_ENVIROMENT=$VITE_ENVIROMENT >> .env
+          cat .env
+
       - name: "Create env file for server"
         working-directory: ./rust-server
         env:
