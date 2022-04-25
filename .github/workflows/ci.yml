@@ -22,7 +22,7 @@ jobs:
             os: macos-latest
           - target: x86_64-pc-windows-msvc
             os: windows-latest
-    runs-on: ${{ matrix.os }}
+    runs-on:${{ matrix.os }}
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2.4.0
@@ -34,11 +34,15 @@ jobs:
 
       - name: "Create env file for server"
         working-directory: ./rust-server
+        env:
+          SECRET_FOR_JWT: ${{ secrets.SECRET_FOR_JWT }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ENVIROMENT: ${{ secrets.ENVIROMENT }}
         run: |
           touch .env
-          echo SECRET_FOR_JWT= ${{ secrets.SECRET_FOR_JWT }} >> .env
-          echo DATABASE_URL= ${{ secrets.DATABASE_URL }} >> .env
-          echo ENVIROMENT= ${{ secrets.ENVIROMENT }} >> .env
+          echo SECRET_FOR_JWT=$SECRET_FOR_JWT >> .env
+          echo DATABASE_URL=$DATABASE_URL >> .env
+          echo ENVIROMENT=$ENVIROMENT >> .env
           cat .env
 
       - name: Install Dependencies and setup build for SvelteKit
@@ -51,14 +55,14 @@ jobs:
       - name: Build binary
         working-directory: ./rust-server
         run: |
-          cargo build --target ${{ matrix.target }}
+          cargo build --target${{ matrix.target }}
 
   test:
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on:${{ matrix.os }}
 
     steps:
       - name: Checkout sources
@@ -71,11 +75,15 @@ jobs:
 
       - name: "Create env file for server"
         working-directory: ./rust-server
+        env:
+          SECRET_FOR_JWT: ${{ secrets.SECRET_FOR_JWT }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ENVIROMENT: ${{ secrets.ENVIROMENT }}
         run: |
           touch .env
-          echo SECRET_FOR_JWT= ${{ secrets.SECRET_FOR_JWT }} >> .env
-          echo DATABASE_URL= ${{ secrets.DATABASE_URL }} >> .env
-          echo ENVIROMENT= ${{ secrets.ENVIROMENT }} >> .env
+          echo SECRET_FOR_JWT=$SECRET_FOR_JWT >> .env
+          echo DATABASE_URL=$DATABASE_URL >> .env
+          echo ENVIROMENT=$ENVIROMENT >> .env
           cat .env
 
       # - name: Install and setup
