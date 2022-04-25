@@ -86,4 +86,5 @@ jobs:
       #     pnpm run build --if-present
 
       - name: Test Rust Server
+        working-directory: ./rust-server
         run: cargo test  --all-features
