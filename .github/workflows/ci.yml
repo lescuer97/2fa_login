@@ -36,9 +36,9 @@ jobs:
         working-directory: ./rust-server
         run: |
           touch .env
-          echo SECRET_FOR_JWT=${{ secrets.SECRET_FOR_JWT }} >> .env
-          echo DATABASE_URL=${{ secrets.DATABASE_URL }} >> .env
-          echo ENVIROMENT=${{ secrets.ENVIROMENT }} >> .env
+          echo SECRET_FOR_JWT= ${{ secrets.SECRET_FOR_JWT }} >> .env
+          echo DATABASE_URL= ${{ secrets.DATABASE_URL }} >> .env
+          echo ENVIROMENT= ${{ secrets.ENVIROMENT }} >> .env
           cat .env
 
       - name: Install Dependencies and setup build for SvelteKit
@@ -73,9 +73,9 @@ jobs:
         working-directory: ./rust-server
         run: |
           touch .env
-          echo SECRET_FOR_JWT=${{ secrets.SECRET_FOR_JWT }} >> .env
-          echo DATABASE_URL=${{ secrets.DATABASE_URL }} >> .env
-          echo ENVIROMENT=${{ secrets.ENVIROMENT }} >> .env
+          echo SECRET_FOR_JWT= ${{ secrets.SECRET_FOR_JWT }} >> .env
+          echo DATABASE_URL= ${{ secrets.DATABASE_URL }} >> .env
+          echo ENVIROMENT= ${{ secrets.ENVIROMENT }} >> .env
           cat .env
 
       # - name: Install and setup
