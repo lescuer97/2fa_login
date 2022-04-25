@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  pull_request: # Need to run on pull-requests, otherwise PRs from forks don't run
+  push:
+    branches:
+      - "staging" # Bors uses this branch
+      - "trying" # Bors uses this branch
+      - "master" # Always build head of master for the badge in the README
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: armv7-unknown-linux-gnueabihf
+            os: ubuntu-latest
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2.4.0
+
+      - uses: Swatinem/rust-cache@v1.3.0
+
+      - name: Setup node
+        uses: actions/setup-node@v2
+
+      - name: Install Dependencies and setup build for SvelteKit
+        working-directory: ./front
+        run: |
+          npm i -g pnpm
+          pnpm i
+          pnpm run build --if-present
+
+      - name: "Create env file for server"
+        working-directory: ./rust-server
+        run: |
+          touch .env
+          echo SECRET_FOR_JWT=${{ secrets.SECRET_FOR_JWT }} >> .env
+          echo DATABASE_URL=${{ secrets.DATABASE_URL }} >> .env
+          echo ENVIROMENT=${{ secrets.ENVIROMENT }} >> .env
+          cat .env
+
+      - name: Build binary
+        working-directory: ./rust-server
+        run: |
+          cargo build --target ${{ matrix.target }}
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2.4.0
+
+      - uses: Swatinem/rust-cache@v1.3.0
+
+      - name: Setup node
+        uses: actions/setup-node@v2
+
+      - name: "Create env file for server"
+        working-directory: ./rust-server
+        run: |
+          touch .env
+          echo SECRET_FOR_JWT=${{ secrets.SECRET_FOR_JWT }} >> .env
+          echo DATABASE_URL=${{ secrets.DATABASE_URL }} >> .env
+          echo ENVIROMENT=${{ secrets.ENVIROMENT }} >> .env
+          cat .env
+
+      - name: Install and setup
+        working-directory: ./swap-gui
+        run: |
+          npm i -g pnpm
+          pnpm i
+          pnpm run build --if-present
+
+      - name: Test Rust Server
+        run: cargo test  --all-features
