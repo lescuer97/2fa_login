@@ -11,6 +11,7 @@
 #![forbid(unsafe_code)]
 
 pub mod auth;
+pub mod routes;
 pub mod server_messages;
 pub mod users;
 pub mod utils;

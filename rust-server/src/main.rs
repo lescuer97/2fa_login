@@ -1,133 +1,19 @@
 use actix_cors::Cors;
-use actix_web::cookie::Cookie;
-use actix_web::{
-    get, guard, http, http::header::ContentType, middleware, post, web, App, HttpRequest,
-    HttpResponse, HttpServer,
-};
-use rust_server::auth::JWTToken;
-use rust_server::server_messages::ResponseBodyMessage;
-use rust_server::users::{LoginData, RegisterUserData};
-use rust_server::utils::generate_cookie;
+use actix_web::{get, guard, http, middleware, web, App, HttpResponse, HttpServer};
+use rust_server::routes::auth::{check_login, login_function, logout, register_user};
 use serde_json::json;
 use sqlx::{PgPool, Pool, Postgres};
 use std::env;
 
 async fn options_call() -> HttpResponse {
-    HttpResponse::Ok()
-        .content_type(ContentType::json())
-        .finish() // <
-}
-
-/// This handler uses json extractor
-async fn login_function(
-    req: HttpRequest,
-    item: web::Json<LoginData>,
-    pool: web::Data<Pool<Postgres>>,
-) -> HttpResponse {
-    // used in case that the client calls when already signed in
-    match JWTToken::validate_jwt_token_from_cookie(req) {
-        Ok(()) => {
-            let already_logedin_value = ResponseBodyMessage::success_message("Already Logged in");
-
-            return HttpResponse::Accepted()
-                .content_type(ContentType::json())
-                .json(already_logedin_value);
-        }
-        Err(_) => println!("No jwt token"),
-    }
-
-    match &item.login(pool).await {
-        Ok(()) => (),
-        Err(error) => {
-            println!("login Error {:?}", error);
-            return HttpResponse::NotFound()
-                .content_type(ContentType::json())
-                .body("Incorrect username or password");
-        }
-    };
-
-    let jwt: String = match JWTToken::create_jwt_token(&item.email) {
-        Ok(token) => token,
-        Err(_) => {
-            return HttpResponse::NotFound()
-                .content_type(ContentType::json())
-                .body("Incorrect username or password");
-        }
-    };
-    let jwt_cookie: Cookie = generate_cookie("auth", jwt);
-
-    let success_registering = ResponseBodyMessage::success_message(json!("Logged in"));
-
-    HttpResponse::Ok()
-        .content_type(ContentType::json())
-        .cookie(jwt_cookie)
-        .json(success_registering)
+    HttpResponse::Ok().finish() // <
 }
 
 #[get("/api/content")]
 pub async fn content() -> HttpResponse {
     let values = json!([{"user":"leo", "gender":"male"},{"user":"valeria", "gender":"mujer"}]);
 
-    HttpResponse::Ok()
-        .content_type(ContentType::json())
-        .json(values)
-}
-
-#[get("/auth/checklogin")]
-pub async fn check_login(req: HttpRequest) -> HttpResponse {
-    let json_token_valid = match JWTToken::validate_jwt_token_from_cookie(req) {
-        Ok(()) => true,
-        Err(_) => {
-            println!("No jwt token");
-            false
-        }
-    };
-    if json_token_valid {
-        HttpResponse::Ok()
-            .content_type(ContentType::json())
-            .finish()
-    } else {
-        HttpResponse::TemporaryRedirect().finish()
-    }
-}
-
-#[post("/auth/logout")]
-pub async fn logout() -> HttpResponse {
-    let jwt: String = match JWTToken::logout_jwt_token() {
-        Ok(token) => token,
-        Err(_) => {
-            return HttpResponse::InternalServerError()
-                .content_type(ContentType::json())
-                .json("There was a problem with your request");
-        }
-    };
-    let mut jwt_cookie = generate_cookie("auth", jwt);
-    jwt_cookie.make_removal();
-    HttpResponse::Ok()
-        .cookie(jwt_cookie)
-        .content_type(ContentType::json())
-        .finish()
-}
-
-#[post("/auth/register")]
-pub async fn register_user(
-    mut item: web::Json<RegisterUserData>,
-    pool: web::Data<Pool<Postgres>>,
-) -> HttpResponse {
-    match item.register(pool).await {
-        Ok(()) => (),
-        Err(error) => {
-            println!("error {:?}", error);
-            return HttpResponse::UnprocessableEntity()
-                .content_type(ContentType::json())
-                .body("");
-        }
-    };
-    let success_registering = ResponseBodyMessage::success_message(json!("Registed successfuly"));
-
-    HttpResponse::Ok()
-        .content_type(ContentType::json())
-        .json(success_registering)
+    HttpResponse::Ok().json(values)
 }
 
 #[actix_web::main]

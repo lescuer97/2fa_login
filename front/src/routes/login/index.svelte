@@ -1,26 +1,27 @@
 <script lang="ts">
-	import axios from 'axios';
+	import { goto } from '$app/navigation';
+
 	let email: string;
 	let password: string;
+	let loginError: boolean = false;
+
 	const loginUser = async () => {
-		const res = await axios
-			.post(
-				`${import.meta.env.VITE_AUTH_SERVER}/auth/login`,
-				{
-					email,
-					password
-				},
-				{ withCredentials: true }
-			)
-			.then((res) => res.data);
-		if (res) {
-			window.location = '/';
+		const rawRes = await fetch(`${import.meta.env.VITE_AUTH_SERVER}/auth/login`, {
+			method: 'post',
+			headers: {
+				Accept: 'application/json',
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				email,
+				password
+			})
+		});
+		const res = await rawRes.json();
+
+		if (rawRes.ok) {
+			goto('/');
 		}
-	};
-	const logout = async () => {
-		const res = await axios
-			.post(`${import.meta.env.VITE_AUTH_SERVER}/auth/logout`)
-			.then((res) => res.data);
 	};
 </script>
 
@@ -30,7 +31,6 @@
 		<input placeholder="password" type="password" bind:value={password} />
 		<button type="submit">Login</button>
 	</form>
-	<button on:click={logout}>Logout</button>
 </div>
 
 <style>

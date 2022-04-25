@@ -11,19 +11,36 @@ use sqlx::{
     postgres::{PgHasArrayType, PgTypeInfo, Postgres},
     FromRow, Pool, Type,
 };
+#[derive(Debug, thiserror::Error)]
+pub enum UserError {
+    #[error("Password Doesn't match")]
+    PasswordDontMatch,
+    #[error("Error from db")]
+    DBError(#[source] sqlx::Error),
+    #[error("Error wasn't expected")]
+    UnexpectedError,
+}
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LoginData {
     pub email: String,
     pub password: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct LoginDataToSend {
+    pub email: String,
+    pub password: Option<String>,
+    pub u2f: bool,
+    pub totp: bool,
+}
+
 impl LoginData {
-    pub async fn login(&self, pool: Data<Pool<Postgres>>) -> Result<()> {
-        let user_query: LoginData = match sqlx::query_as!(
-            LoginData,
+    pub async fn login(&self, pool: Data<Pool<Postgres>>) -> Result<LoginDataToSend> {
+        let user_query: LoginDataToSend = match sqlx::query_as!(
+            LoginDataToSend,
             r#"
-        SELECT email, password
+        SELECT email, password, u2f, totp
         FROM users
         where email = $1
             "#,
@@ -36,14 +53,19 @@ impl LoginData {
             Err(error) => bail!(error),
         };
 
-        self.check_password_matches_database(user_query)?;
+        self.check_password_matches_database(user_query.to_owned())?;
 
-        Ok(())
+        Ok(LoginDataToSend {
+            email: user_query.email,
+            password: None,
+            u2f: user_query.u2f,
+            totp: user_query.totp,
+        })
     }
-    fn check_password_matches_database(&self, user_query: LoginData) -> Result<()> {
-        let password_hash_string = &user_query.password.unwrap();
+    fn check_password_matches_database(&self, user_query: LoginDataToSend) -> Result<()> {
+        let password_hash_string = user_query.password.unwrap();
 
-        let parsed_hash = match PasswordHash::new(password_hash_string) {
+        let parsed_hash = match PasswordHash::new(password_hash_string.as_str()) {
             Ok(hashed_value) => hashed_value,
             Err(error) => bail!(error),
         };

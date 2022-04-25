@@ -1,9 +1,13 @@
 use std::env;
 
-use actix_web::cookie;
+use actix_web::cookie::time::OffsetDateTime;
 use actix_web::cookie::Cookie;
+use actix_web::cookie::{self, Expiration};
+use chrono::{DateTime, Utc};
 
-pub const ENVIROMENT: &'static str = "ENVIROMENT";
+use crate::auth::AuthError;
+
+pub const ENVIROMENT: &str = "ENVIROMENT";
 
 pub fn get_env_variable(name: &str) -> Option<String> {
     match env::var(name) {
@@ -18,16 +22,25 @@ pub fn get_env_variable(name: &str) -> Option<String> {
     }
 }
 
-pub fn generate_cookie(name: &str, value: String) -> Cookie {
+pub fn generate_cookie(
+    name: &str,
+    value: String,
+    expiration_time: DateTime<Utc>,
+) -> anyhow::Result<Cookie> {
     let enviroment = get_env_variable(ENVIROMENT);
+    let formated_offset = match OffsetDateTime::from_unix_timestamp(expiration_time.timestamp()) {
+        Ok(offset) => offset,
 
+        Err(_) => return Err(anyhow::anyhow!(AuthError::UnexpectedError)),
+    };
+    let formated_expiration = Expiration::from(formated_offset);
     let cookie: Cookie = if let Some(env_variable) = enviroment {
         if env_variable == "development" {
             cookie::Cookie::build(name, value)
                 .path("/")
                 .secure(true)
                 .http_only(true)
-                // .expires(EXPIRATION)
+                .expires(formated_expiration)
                 .same_site(cookie::SameSite::Strict)
                 .finish()
         } else {
@@ -36,7 +49,7 @@ pub fn generate_cookie(name: &str, value: String) -> Cookie {
                 .domain(".leito.dev")
                 .secure(true)
                 .http_only(true)
-                // .expires(EXPIRATION)
+                .expires(formated_expiration)
                 .same_site(cookie::SameSite::Strict)
                 .finish()
         }
@@ -50,5 +63,5 @@ pub fn generate_cookie(name: &str, value: String) -> Cookie {
             .same_site(cookie::SameSite::Strict)
             .finish()
     };
-    cookie
+    Ok(cookie)
 }

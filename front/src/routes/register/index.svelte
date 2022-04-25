@@ -1,14 +1,26 @@
 <script lang="ts">
-	import axios from 'axios';
+	import { goto } from '$app/navigation';
+
 	let email: string;
 	let password: string;
 	let password_repeat: string;
-	const loginUser = () => {
-		axios.post(`${import.meta.env.VITE_AUTH_SERVER}/auth/register`, {
-			email,
-			password,
-			password_repeat
+	const loginUser = async () => {
+		const req = await fetch(`${import.meta.env.VITE_AUTH_SERVER}/auth/register`, {
+			method: 'post',
+			headers: {
+				Accept: 'application/json',
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				email,
+				password,
+				password_repeat
+			})
 		});
+		const res = await req.json();
+		if (res.ok) {
+			goto('/login');
+		}
 	};
 </script>
 
@@ -30,6 +42,6 @@
 	.register {
 		display: flex;
 		flex-direction: column;
-		max-width: 25%;
+		/* max-width: 25%; */
 	}
 </style>

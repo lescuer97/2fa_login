@@ -11,6 +11,7 @@ const config = {
 		adapter: adapter(),
 		vite: {
 			server: {
+				https: true,
 				hmr: {
 					host: 'login.localhost',
 					clientPort: 443,

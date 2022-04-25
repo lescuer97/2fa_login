@@ -1,11 +1,23 @@
 use actix_web::HttpRequest;
 use anyhow::{bail, Result};
-use chrono::{Duration, Utc};
+use chrono::{DateTime, Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 
 // this secret is temporary and not for proudction
 const SECRET: &str = "AYdW4qq7$x#hjn4CUY%WjvcaUVP6MnBqkr6X6T6Ym2Lu6S5Duv98jciW&s*^N*UNynGnp6^";
+pub const AUTHENTIFIED_COOKIE_NAME: &str = "auth";
+pub const TOTP_COOKIE_NAME: &str = "auth-2fa";
+
+#[derive(Debug, Serialize, Deserialize, thiserror::Error, Copy, Clone)]
+pub enum AuthError {
+    #[error("No JWT Error")]
+    NoJWTToken,
+    #[error("The token is not valid")]
+    InvalidToken,
+    #[error("Unexpected error has ocurred")]
+    UnexpectedError,
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 #[allow(non_snake_case)]
@@ -14,12 +26,10 @@ pub struct JWTToken {
     pub exp: usize,
 }
 impl JWTToken {
-    pub fn create_jwt_token(email: &str) -> Result<String> {
-        let expiration_time = Utc::now() + Duration::days(30);
-
+    pub fn create_jwt_token(email: &str, duration: DateTime<Utc>) -> Result<String> {
         let token_setup = JWTToken {
             sub: email.to_owned(),
-            exp: expiration_time.timestamp() as usize,
+            exp: duration.timestamp() as usize,
         };
 
         let token: String = match encode(
@@ -33,10 +43,13 @@ impl JWTToken {
 
         Ok(token)
     }
-    pub fn validate_jwt_token_from_cookie(request: HttpRequest) -> Result<()> {
-        let auth_token = match request.cookie("auth") {
+    pub fn validate_jwt_token_from_cookie(
+        request: HttpRequest,
+        name_of_token: &str,
+    ) -> Result<(), AuthError> {
+        let auth_token = match request.cookie(name_of_token) {
             Some(token) => token.value().to_string(),
-            None => bail!("There was a problem extracting the cookie"),
+            None => return Err(AuthError::NoJWTToken),
         };
 
         match decode::<JWTToken>(
@@ -45,9 +58,7 @@ impl JWTToken {
             &Validation::default(),
         ) {
             Ok(token) => token,
-            Err(error) => {
-                bail!("unable to decode token {}", error)
-            }
+            Err(_) => return Err(AuthError::InvalidToken),
         };
 
         Ok(())
@@ -74,15 +85,21 @@ impl JWTToken {
 }
 #[cfg(test)]
 mod tests {
-    use crate::{auth::JWTToken, utils::generate_cookie};
+    use crate::{
+        auth::{JWTToken, AUTHENTIFIED_COOKIE_NAME},
+        utils::generate_cookie,
+    };
     use actix_web::{cookie::Cookie, test::TestRequest};
+    use chrono::{DateTime, Duration, Utc};
+
     use dotenv;
     #[test]
     fn create_jwt_token_success() {
         dotenv::dotenv().ok();
         let email: String = String::from("test@test.com");
+        let expiration_time: DateTime<Utc> = Utc::now() + Duration::days(30);
 
-        let token = JWTToken::create_jwt_token(&email).unwrap();
+        let token = JWTToken::create_jwt_token(&email, expiration_time).unwrap();
 
         assert_eq!(token.is_empty(), false);
     }
@@ -92,14 +109,35 @@ mod tests {
         dotenv::dotenv().ok();
 
         let email: String = String::from("test@test.com");
-        let jwt_token = JWTToken::create_jwt_token(&email).unwrap();
+        let expiration_time: DateTime<Utc> = Utc::now() + Duration::days(30);
 
-        let jwt_cookie: Cookie = generate_cookie("auth", jwt_token);
+        let jwt_token = JWTToken::create_jwt_token(&email, expiration_time).unwrap();
+
+        let jwt_cookie: Cookie =
+            generate_cookie(AUTHENTIFIED_COOKIE_NAME, jwt_token, expiration_time).unwrap();
 
         let req = TestRequest::default().cookie(jwt_cookie).to_http_request();
 
-        let token = JWTToken::validate_jwt_token_from_cookie(req).unwrap();
+        let token =
+            JWTToken::validate_jwt_token_from_cookie(req, AUTHENTIFIED_COOKIE_NAME).unwrap();
         assert_eq!((), token);
         // assert_eq!("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0QHRlc3QuY29tIiwiZXhwIjoxMDAwMDAwMDAwMDAwfQ.ZnJtOg79-8NNAinIzFOLM240P_O16BiH5IaQZZvP35g", token);
+    }
+    #[actix_web::test]
+    async fn invalid_jwt_token() {
+        dotenv::dotenv().ok();
+
+        let email: String = String::from("test@test.com");
+        let expiration_time: DateTime<Utc> = Utc::now() - Duration::days(30);
+
+        let jwt_token = JWTToken::create_jwt_token(&email, expiration_time).unwrap();
+
+        let jwt_cookie: Cookie =
+            generate_cookie(AUTHENTIFIED_COOKIE_NAME, jwt_token, expiration_time).unwrap();
+
+        let req = TestRequest::default().cookie(jwt_cookie).to_http_request();
+
+        let token = JWTToken::validate_jwt_token_from_cookie(req, AUTHENTIFIED_COOKIE_NAME);
+        assert_eq!(true, token.is_err());
     }
 }

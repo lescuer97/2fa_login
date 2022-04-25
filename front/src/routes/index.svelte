@@ -1,32 +1,17 @@
-<script context="module">
-	import { browser } from '$app/env';
-
-	if (!browser) {
-		process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = 0;
-	}
-	export async function load({ params, fetch, session, stuff }) {
-		const url = `${import.meta.env.VITE_AUTH_SERVER}/auth/checklogin`;
-		const res = await fetch(url);
-
-		if (res.status === 307) {
-			return { status: res.status, redirect: '/login' };
-		}
-		return {
-			props: 'ok'
-		};
-	}
-</script>
-
 <script lang="ts">
-	import axios from 'axios';
+	import { goto } from '$app/navigation';
 
 	const logout = async () => {
-		const res = await axios
-			.post(`${import.meta.env.VITE_AUTH_SERVER}/auth/logout`)
-			.then((res) => res);
-
-		if (res) {
-			window.location = '/login';
+		const rawRes = await fetch(`${import.meta.env.VITE_AUTH_SERVER}/auth/logout`, {
+			method: 'post',
+			headers: {
+				Accept: 'application/json',
+				'Content-Type': 'application/json'
+			}
+		});
+		// const res = await rawRes.json();
+		if (rawRes.ok) {
+			goto('/login');
 		}
 	};
 </script>
