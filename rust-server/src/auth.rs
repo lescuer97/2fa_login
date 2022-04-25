@@ -4,8 +4,8 @@ use chrono::{DateTime, Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 
-// this secret is temporary and not for proudction
-const SECRET: &str = "AYdW4qq7$x#hjn4CUY%WjvcaUVP6MnBqkr6X6T6Ym2Lu6S5Duv98jciW&s*^N*UNynGnp6^";
+use crate::utils::get_env_variable;
+
 pub const AUTHENTIFIED_COOKIE_NAME: &str = "auth";
 pub const TOTP_COOKIE_NAME: &str = "auth-2fa";
 
@@ -27,6 +27,7 @@ pub struct JWTToken {
 }
 impl JWTToken {
     pub fn create_jwt_token(email: &str, duration: DateTime<Utc>) -> Result<String> {
+        let secret_jwt = get_env_variable("SECRET_FOR_JWT");
         let token_setup = JWTToken {
             sub: email.to_owned(),
             exp: duration.timestamp() as usize,
@@ -35,7 +36,7 @@ impl JWTToken {
         let token: String = match encode(
             &Header::default(),
             &token_setup,
-            &EncodingKey::from_secret(SECRET.as_ref()),
+            &EncodingKey::from_secret(secret_jwt.as_ref()),
         ) {
             Ok(token) => token,
             Err(error) => bail!(error),
@@ -52,9 +53,11 @@ impl JWTToken {
             None => return Err(AuthError::NoJWTToken),
         };
 
+        let secret_jwt = get_env_variable("SECRET_FOR_JWT");
+
         match decode::<JWTToken>(
             auth_token.as_str(),
-            &DecodingKey::from_secret(SECRET.as_ref()),
+            &DecodingKey::from_secret(secret_jwt.as_ref()),
             &Validation::default(),
         ) {
             Ok(token) => token,
@@ -71,10 +74,12 @@ impl JWTToken {
             exp: expiration_time.timestamp() as usize,
         };
 
+        let secret_jwt = get_env_variable("SECRET_FOR_JWT");
+
         let token: String = match encode(
             &Header::default(),
             &token_setup,
-            &EncodingKey::from_secret(SECRET.as_ref()),
+            &EncodingKey::from_secret(secret_jwt.as_ref()),
         ) {
             Ok(token) => token,
             Err(error) => bail!(error),
