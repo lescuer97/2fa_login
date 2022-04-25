@@ -9,15 +9,18 @@ use crate::auth::AuthError;
 
 pub const ENVIROMENT: &str = "ENVIROMENT";
 
-pub fn get_env_variable(name: &str) -> Option<String> {
+pub fn get_env_variable(name: &str) -> String {
     match env::var(name) {
-        Ok(variable) => Some(variable),
+        Ok(variable) => variable,
         Err(_) => {
             println!(
                 "there is no enviroment variable set with the name {} variable set",
                 name
             );
-            None
+            panic!(
+                "there is no enviroment variable set with the name {} variable set",
+                name
+            )
         }
     }
 }
@@ -34,34 +37,24 @@ pub fn generate_cookie(
         Err(_) => return Err(anyhow::anyhow!(AuthError::UnexpectedError)),
     };
     let formated_expiration = Expiration::from(formated_offset);
-    let cookie: Cookie = if let Some(env_variable) = enviroment {
-        if env_variable == "development" {
-            cookie::Cookie::build(name, value)
-                .path("/")
-                .secure(true)
-                .http_only(true)
-                .expires(formated_expiration)
-                .same_site(cookie::SameSite::Strict)
-                .finish()
-        } else {
-            cookie::Cookie::build(name, value)
-                .path("/")
-                .domain(".leito.dev")
-                .secure(true)
-                .http_only(true)
-                .expires(formated_expiration)
-                .same_site(cookie::SameSite::Strict)
-                .finish()
-        }
+    let cookie: Cookie = if enviroment == "development" {
+        cookie::Cookie::build(name, value)
+            .path("/")
+            .secure(true)
+            .http_only(true)
+            .expires(formated_expiration)
+            .same_site(cookie::SameSite::Strict)
+            .finish()
     } else {
         cookie::Cookie::build(name, value)
             .path("/")
             .domain(".leito.dev")
             .secure(true)
             .http_only(true)
-            // .expires(EXPIRATION)
+            .expires(formated_expiration)
             .same_site(cookie::SameSite::Strict)
             .finish()
     };
+
     Ok(cookie)
 }
