@@ -9,7 +9,8 @@ export async function handle({ event, resolve }) {
 	const url = `${import.meta.env.VITE_AUTH_SERVER}/auth/checklogin`;
 	const res = await fetch(url, {
 		headers: event.request.headers
-	});
+	}).catch((err) => console.log({ err }));
+
 	if (res.status === 422 && !event.url.pathname.startsWith('/login')) {
 		return Response.redirect(`${import.meta.env.VITE_AUTH_SERVER}/login`, 303);
 	}
