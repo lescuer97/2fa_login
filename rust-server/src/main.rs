@@ -65,7 +65,7 @@ async fn main() -> std::io::Result<()> {
             .service(logout)
             .service(check_login)
     })
-    .bind("0.0.0.0:8088")?
+    .bind("0.0.0.0:10000")?
     .run()
     .await
 }
