@@ -15,6 +15,10 @@ pub async fn content() -> HttpResponse {
 
     HttpResponse::Ok().json(values)
 }
+#[get("/api/health")]
+pub async fn health() -> HttpResponse {
+    HttpResponse::Ok().finish()
+}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -47,6 +51,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(web::Data::new(pool.clone()))
             // enable logger
+            .service(health)
             .wrap(middleware::Logger::default())
             .wrap(cors)
             .app_data(web::JsonConfig::default().limit(4096)) // <- limit size of the payload (global configuration)

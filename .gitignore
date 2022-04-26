@@ -29,3 +29,4 @@ node_modules/
 # SERVER GIT IGNORE
 rust-server/target
 rust-server/Cargo.lock
+target/
