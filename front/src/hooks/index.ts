@@ -2,7 +2,7 @@ import { browser } from '$app/env';
 
 /** @type {import('@sveltejs/kit').Handle} */
 export async function handle({ event, resolve }) {
-	if (!browser && import.meta.env.VITE_ENVIROMENT === 'develop') {
+	if (!browser && import.meta.env.DEV) {
 		process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = 0;
 	}
 
