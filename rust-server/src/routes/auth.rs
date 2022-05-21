@@ -18,7 +18,11 @@ pub async fn register_user(
         Ok(()) => (),
         Err(error) => {
             println!("error {:?}", error);
-            return HttpResponse::UnprocessableEntity().body("");
+            let fail_message = ResponseBodyMessage::fail_message(json!(
+                "There was a problem registering your user"
+            ));
+
+            return HttpResponse::UnprocessableEntity().json(fail_message);
         }
     };
     let success_registering = ResponseBodyMessage::success_message(json!("Registed successfuly"));
@@ -64,7 +68,7 @@ pub async fn login_function(
         Err(error) => {
             println!("login Error {:?}", error);
             let incorrect_username =
-                ResponseBodyMessage::success_message("Incorrect username or password");
+                ResponseBodyMessage::fail_message("Incorrect username or password");
             return HttpResponse::UnprocessableEntity().json(incorrect_username);
         }
     };
@@ -76,7 +80,7 @@ pub async fn login_function(
             Ok(token) => token,
             Err(_) => {
                 let incorrect_username =
-                    ResponseBodyMessage::success_message("Incorrect username or password");
+                    ResponseBodyMessage::fail_message("Incorrect username or password");
 
                 return HttpResponse::UnprocessableEntity().json(incorrect_username);
             }
@@ -98,7 +102,7 @@ pub async fn login_function(
             Ok(token) => token,
             Err(_) => {
                 let incorrect_username =
-                    ResponseBodyMessage::success_message("Incorrect username or password");
+                    ResponseBodyMessage::fail_message("Incorrect username or password");
 
                 return HttpResponse::UnprocessableEntity().json(incorrect_username);
             }

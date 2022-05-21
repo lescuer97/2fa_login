@@ -57,7 +57,7 @@ jobs:
         run: |
           npm i -g pnpm
           pnpm i
-          pnpm run build --if-present
+          pnpm run build
 
       - name: Build binary
         working-directory: ./rust-server
@@ -104,12 +104,12 @@ jobs:
           echo ENVIROMENT=$ENVIROMENT >> .env
           cat .env
 
-      # - name: Install and setup
-      #   working-directory: ./front
-      #   run: |
-      #     npm i -g pnpm
-      #     pnpm i
-      #     pnpm run build --if-present
+      - name: Test Sveltekit front
+        working-directory: ./front
+        run: |
+          npm i -g pnpm
+          pnpm i
+          pnpm test
 
       - name: Test Rust Server
         working-directory: ./rust-server

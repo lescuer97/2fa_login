@@ -15,8 +15,8 @@ use sqlx::{
 pub enum UserError {
     #[error("Password Doesn't match")]
     PasswordDontMatch,
-    #[error("Error from db")]
-    DBError(#[source] sqlx::Error),
+    #[error("{0}")]
+    DBError(#[from] sqlx::Error),
     #[error("Error wasn't expected")]
     UnexpectedError,
 }
@@ -135,8 +135,7 @@ impl RegisterUserData {
         {
             Ok(user) => user,
             Err(error) => {
-                println!("error: {}", error);
-                bail!(error)
+                bail!(UserError::DBError(error))
             }
         };
 
