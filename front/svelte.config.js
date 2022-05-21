@@ -10,6 +10,13 @@ const config = {
 	kit: {
 		adapter: adapter(),
 		vite: {
+			test: {
+				deps: {
+					inline: ['msw', 'whatwg-fetch']
+				},
+				environment: 'jsdom',
+				setupFiles: ['./src/tests/setup.ts']
+			},
 			server: {
 				hmr: {
 					host: 'login.localhost',

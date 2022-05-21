@@ -11,7 +11,11 @@ export async function handle({ event, resolve }) {
 		headers: event.request.headers
 	}).catch((err) => console.log({ err }));
 
-	if (res.status === 422 && !event.url.pathname.startsWith('/login')) {
+	if (
+		res.status === 422 &&
+		!event.url.pathname.startsWith('/login') &&
+		!event.url.pathname.startsWith('/register')
+	) {
 		return Response.redirect(`${import.meta.env.VITE_AUTH_SERVER}/login`, 303);
 	}
 	if (res.status === 200 && event.url.pathname.startsWith('/login')) {

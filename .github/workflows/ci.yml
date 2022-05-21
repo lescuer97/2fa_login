@@ -59,6 +59,13 @@ jobs:
           pnpm i
           pnpm run build --if-present
 
+      - name: Test Sveltekit
+        working-directory: ./front
+        run: |
+          npm i -g pnpm
+          pnpm i
+          pnpm test
+
       - name: Build binary
         working-directory: ./rust-server
         run: |

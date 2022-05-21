@@ -1,9 +1,9 @@
 login.localhost {
         handle /api/* {
-                reverse_proxy localhost:8088
+                reverse_proxy localhost:10000
         }
         handle /auth/* {
-                reverse_proxy localhost:8088
+                reverse_proxy localhost:10000
         }
         handle {
                 reverse_proxy localhost:3000
